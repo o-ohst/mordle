@@ -4,7 +4,7 @@ defmodule ServerWeb.RoomChannel do
 
   @impl true
   @spec join(<<_::80>>, any, any) :: {:ok, any}
-  def join("room:" <> room_id, payload, socket) do
+  def join("room:" <> _room_id, payload, socket) do
     if authorized?(payload) do
       {:ok, socket}
     else
