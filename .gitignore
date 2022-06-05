@@ -24,6 +24,7 @@ server-*.tar
 
 # Ignore assets that are produced by build tools.
 /priv/static/assets/
+/priv/cert
 
 # Ignore digested assets cache.
 /priv/static/cache_manifest.json

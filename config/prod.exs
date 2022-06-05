@@ -20,16 +20,17 @@ config :logger, level: :info
 # To get SSL working, you will need to add the `https` key
 # to the previous section and set your `:url` port to 443:
 #
-# config :server, ServerWeb.Endpoint,
-  # url: [scheme: "http", host: "mordle-server.herokuapp.com", port: System.get_env("PORT") || 4001],
-  # http: [port: {:system, "PORT"}]
-  # https: [
-  #   ...,
-  #   port: 443,
-  #   cipher_suite: :strong,
-  #   keyfile: System.get_env("SOME_APP_SSL_KEY_PATH"),
-  #   certfile: System.get_env("SOME_APP_SSL_CERT_PATH")
-  # ]
+config :server, ServerWeb.Endpoint,
+  url: [host: "mordle.gigalixirapp.com"],
+  http: [port: {:system, "PORT"}],
+  https: [
+    port: 443,
+    cipher_suite: :strong,
+    otp_app: :hello,
+    keyfile: System.get_env("SOME_APP_SSL_KEY_PATH"),
+    certfile: System.get_env("SOME_APP_SSL_CERT_PATH")
+  ],
+  force_ssl: [rewrite_on: [:x_forwarded_proto]]
 #
 # The `cipher_suite` is set to `:strong` to support only the
 # latest and more secure SSL ciphers. This means old browsers
