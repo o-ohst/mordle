@@ -14,10 +14,12 @@ defmodule Server.Application do
       ServerWeb.Telemetry,
       # Start the PubSub system
       {Phoenix.PubSub, name: Server.PubSub},
+      ServerWeb.Presence,
       # Start the Endpoint (http/https)
-      ServerWeb.Endpoint
+      ServerWeb.Endpoint,
       # Start a worker by calling: Server.Worker.start_link(arg)
       # {Server.Worker, arg}
+      Server.Datastore
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

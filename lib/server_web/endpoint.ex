@@ -20,11 +20,11 @@ defmodule ServerWeb.Endpoint do
   #
   # You should set gzip to true if you are running phx.digest
   # when deploying your static files in production.
-  plug Plug.Static,
-    at: "/",
-    from: :server,
-    gzip: false,
-    only: ~w(assets fonts images favicon.ico robots.txt)
+  # plug Plug.Static,
+  #   at: "/",
+  #   from: :server,
+  #   gzip: false,
+  #   only: ~w(assets fonts images favicon.ico robots.txt)
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
@@ -50,5 +50,6 @@ defmodule ServerWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  plug CORSPlug, origin: ["http://localhost:3000"]
   plug ServerWeb.Router
 end

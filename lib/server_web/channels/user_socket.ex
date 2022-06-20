@@ -22,8 +22,10 @@ defmodule ServerWeb.UserSocket do
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
   @impl true
-  def connect(_params, socket, _connect_info) do
-    {:ok, socket}
+  @spec connect(atom | %{:playerId => any, optional(any) => any}, Phoenix.Socket.t(), any) ::
+          {:ok, Phoenix.Socket.t()}
+  def connect(params, socket, _connect_info) do
+    {:ok, assign(socket, :playerId, params["playerId"])}
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:

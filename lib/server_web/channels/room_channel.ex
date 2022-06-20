@@ -1,22 +1,38 @@
 defmodule ServerWeb.RoomChannel do
   use ServerWeb, :channel
+  alias ServerWeb.Presence
 
+  @derive [Jason.Encoder]
+  defstruct [:room_id, :players, :answer]
+
+  # def join("room:new", _payload, socket) do
+  #   Server.Datastore.createRoom()
+  #   {:ok, :ets.lookup(:rooms, :ets.first(:rooms)) |> List.first |> (fn({n, a, f}) -> %{room_id: n, players: a |> Tuple.to_list(), answer: f} end).(),socket}
+  # end
 
   @impl true
-  @spec join(<<_::80>>, any, any) :: {:ok, any}
-  def join("room:" <> _room_id, payload, socket) do
-    if authorized?(payload) do
+  def join("room:" <> roomId, _payload, socket) do
+    {status, _} = Server.Datastore.joinRoom(roomId, socket.assigns.playerId)
+    send(self(), :afterJoin)
+    if status == :ok do
       {:ok, socket}
     else
-      {:error, %{reason: "unauthorized"}}
+      {:error, %{reason: "invalid room id"}}
     end
+    # :ets.insert(:rooms, {room_id, {0,1}, "hello"})
+    # {:ok, :ets.lookup(:rooms, room_id) |> List.first |> (fn({n, a, f}) -> %{room_id: n, players: a |> Tuple.to_list(), answer: f} end).(),socket}
+  end
+
+  @impl true
+  def handle_info(:afterJoin, socket) do
+    {:ok, _} = Presence.track(socket, socket.assigns.playerId, %{online_at: inspect(System.system_time(:second))})
+    push(socket, "presenceState", Presence.list(socket))
+    {:noreply, socket}
   end
 
   # Channels can be used in a request/response fashion
   # by sending replies to requests from the client
   @impl true
-  @spec handle_in(<<_::32, _::_*8>>, any, any) ::
-          {:noreply, Phoenix.Socket.t()} | {:reply, {:ok, any}, any}
   def handle_in("ping", payload, socket) do
     {:reply, {:ok, payload}, socket}
   end
@@ -30,10 +46,23 @@ defmodule ServerWeb.RoomChannel do
   end
 
   @impl true
-  def handle_in("new_guess", payload, socket) do
-    broadcast(socket, "new_guess", payload)
+  def handle_in("newGuess", payload, socket) do
+    broadcast(socket, "newGuess", payload)
+    IO.inspect(:ets.lookup(:rooms, :ets.first(:rooms)))
     {:noreply, socket}
   end
+
+  # Phoenix.Channel.intercept(["presence_diff"])
+
+  # @impl true
+  # def handle_out("presence_diff", payload, socket) do
+  #   %{:joins => joins, :leaves => leaves} = payload
+  #   IO.write("presence diff ")
+  #   IO.inspect(joins)
+  #   "room:" <> roomId = socket.topic
+  #   for _z <- joins, do: Server.Datastore.updateCounter(roomId, true)
+  #   for _z <- leaves, do: Server.Datastore.updateCounter(roomId, false)
+  # end
 
   # Add authorization logic here as required.
   defp authorized?(_payload) do
