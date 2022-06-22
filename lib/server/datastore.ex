@@ -2,7 +2,7 @@ defmodule Server.Datastore do
   use GenServer
 
   # rooms (set)
-  #   {id, players:{}, word}
+  #   {id, players:{}, state, word}
   # players (set)
   #   {id, roomId, state}
   # guesses (bag)
@@ -21,13 +21,20 @@ defmodule Server.Datastore do
     :ets.new(:rooms, [:set, :named_table, :public])
     :ets.new(:players, [:set, :named_table])
     :ets.new(:guesses, [:bag, :named_table])
-    {:ok, allowed_words} = File.read(Path.join([Application.app_dir(:server), "priv/data/words.txt"]))
-    allowed_words_list = allowed_words |> String.split("\n", trim: true) |> Enum.map(fn x -> {x} end)
+    {:ok, words} = File.read(Path.join([Application.app_dir(:server), "priv/data/words.txt"]))
+    word_list = words |> String.split("\n", trim: true) |> Enum.map(fn x -> {x} end)
     :ets.new(:allowed, [:set, :named_table])
-    :ets.insert(:allowed, allowed_words_list)
+    :ets.insert(:allowed, word_list)
     # :ets.new(:presence, [:set, :named_table, :public])
     IO.puts("initialized genserver ets")
     {:ok, "Done"}
+  end
+
+  def handle_call({:getRoom, roomId}, ref, state) do
+    [{id, players, rState, word}] = :ets.lookup(:rooms, roomId)
+    res = %{roomId: id, players: players |> Enum.map(fn {a, b} -> %{playerId: a, playerName: b} end), state: rState}
+    IO.inspect(res)
+    {:reply, res, state}
   end
 
   def handle_call({:createRoom, data}, _ref, state) do
@@ -38,8 +45,8 @@ defmodule Server.Datastore do
   end
 
   def handle_call({:joinRoom, data}, _ref, state) do
-    {roomId, playerId} = data
-    :ets.update_element(:rooms, roomId, {2, [ playerId | :ets.lookup_element(:rooms, roomId, 2) ]})
+    {roomId, playerId, playerName} = data
+    :ets.update_element(:rooms, roomId, {2, [ {playerId, playerName} | :ets.lookup_element(:rooms, roomId, 2) ]})
     IO.puts("ets joined room")
     {:reply, :ok, state}
   end
@@ -60,17 +67,23 @@ defmodule Server.Datastore do
 
   ### main client helpers
 
-  def createRoom(playerId) do
-    roomData = {roomId, {playerId}, word} = {Helpers.randomRoomId(), {playerId}, Helpers.randomWord()}
+  def getRoom(roomId) do
+    res = GenServer.call(@name, {:getRoom, roomId})
+    IO.inspect(res)
+    {:ok, res}
+  end
+
+  def createRoom() do
+    roomData = {roomId, [], state, word} = {Helpers.randomRoomId(), [], "created" , Helpers.randomWord()}
     IO.write("createRoom ")
     IO.inspect(roomData)
     GenServer.call(@name, {:createRoom, roomData})
     {:ok, %{roomId: roomId}}
   end
 
-  def joinRoom(roomId, playerId) do
+  def joinRoom(roomId, playerId, playerName) do
     if :ets.member(:rooms, roomId) do
-      GenServer.call(@name, {:joinRoom, {roomId, playerId}})
+      GenServer.call(@name, {:joinRoom, {roomId, playerId, playerName}})
       {:ok, nil}
     else
       {:error, %{reason: "invalid room id"}}

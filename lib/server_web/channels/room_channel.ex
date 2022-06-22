@@ -2,20 +2,17 @@ defmodule ServerWeb.RoomChannel do
   use ServerWeb, :channel
   alias ServerWeb.Presence
 
-  @derive [Jason.Encoder]
-  defstruct [:room_id, :players, :answer]
-
   # def join("room:new", _payload, socket) do
   #   Server.Datastore.createRoom()
   #   {:ok, :ets.lookup(:rooms, :ets.first(:rooms)) |> List.first |> (fn({n, a, f}) -> %{room_id: n, players: a |> Tuple.to_list(), answer: f} end).(),socket}
   # end
 
   @impl true
-  def join("room:" <> roomId, _payload, socket) do
-    {status, _} = Server.Datastore.joinRoom(roomId, socket.assigns.playerId)
-    send(self(), :afterJoin)
+  def join("room:" <> roomId, payload, socket) do
+    {status, _} = Server.Datastore.joinRoom(roomId, socket.assigns.playerId, payload[:playerName])
+    send(self(), :after_join)
     if status == :ok do
-      {:ok, socket}
+      {:ok,  assign(socket, :playerName, payload["playerName"])}
     else
       {:error, %{reason: "invalid room id"}}
     end
@@ -24,9 +21,9 @@ defmodule ServerWeb.RoomChannel do
   end
 
   @impl true
-  def handle_info(:afterJoin, socket) do
-    {:ok, _} = Presence.track(socket, socket.assigns.playerId, %{online_at: inspect(System.system_time(:second))})
-    push(socket, "presenceState", Presence.list(socket))
+  def handle_info(:after_join, socket) do
+    {:ok, _} = Presence.track(socket, socket.assigns.playerId, %{})
+    push(socket, "presence_state", Presence.list(socket))
     {:noreply, socket}
   end
 
@@ -40,17 +37,28 @@ defmodule ServerWeb.RoomChannel do
   # It is also common to receive messages from the client and
   # broadcast to everyone in the current topic (room:lobby).
   @impl true
-  def handle_in("joined", payload, socket) do
-    broadcast(socket, "joined", payload)
+  def handle_in("joined", _payload, socket) do
+    "room:" <> roomId = socket.topic
+    {:ok, data} = Server.Datastore.getRoom(roomId)
+    broadcast(socket, "joined", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName} |> Map.put(:data, data))
+    # %{roomId: r, players: p, state: s} = Server.Datastore.getRoom(roomId)
     {:noreply, socket}
   end
 
   @impl true
-  def handle_in("newGuess", payload, socket) do
-    broadcast(socket, "newGuess", payload)
-    IO.inspect(:ets.lookup(:rooms, :ets.first(:rooms)))
+  def handle_in("new_guess", payload, socket) do
+    broadcast(socket, "new_guess",  %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName} |> Map.merge(payload) )
+    # IO.inspect(:ets.lookup(:rooms, :ets.first(:rooms)))
     {:noreply, socket}
   end
+
+  @impl true
+  def handle_in("ready", _payload, socket) do
+    broadcast(socket, "ready", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName})
+    # IO.inspect(:ets.lookup(:rooms, :ets.first(:rooms)))
+    {:noreply, socket}
+  end
+
 
   # Phoenix.Channel.intercept(["presence_diff"])
 
