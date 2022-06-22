@@ -21,7 +21,6 @@ config :logger, level: :info
 # to the previous section and set your `:url` port to 443:
 #
 config :server, ServerWeb.Endpoint,
-  url: [host: "http://localhost:3000", port: 443],
   http: [port: {:system, "PORT"}],
   # https: [
   #   port: 443,

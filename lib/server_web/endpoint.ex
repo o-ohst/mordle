@@ -14,7 +14,8 @@ defmodule ServerWeb.Endpoint do
 
   socket "/socket", ServerWeb.UserSocket,
     websocket: [timeout: 45_000],
-    longpoll: false
+    longpoll: false,
+    check_origin: ["http://localhost:3000"]
 
   # Serve at "/" the static files from "priv/static" directory.
   #
