@@ -26,9 +26,9 @@ config :server, ServerWeb.Endpoint,
   # https: [
   #   port: 443,
   #   cipher_suite: :strong,
-  #   otp_app: :hello,
-  #   keyfile: System.get_env("SOME_APP_SSL_KEY_PATH"), #can delete?
-  #   certfile: System.get_env("SOME_APP_SSL_CERT_PATH")
+  #   otp_app: :server,
+  #   keyfile: "priv/cert/selfsigned.pem",
+  #   certfile: "priv/cert/selfsigned_key.pem"
   # ],
   force_ssl: [rewrite_on: [:x_forwarded_proto]] #force ssl
 #

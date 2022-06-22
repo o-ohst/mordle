@@ -22,12 +22,13 @@ config :server, ServerWeb.Endpoint,
   http: [
     port: 4001,
   ],
-  # https: [
-  #   port: 4001,
-  #   cipher_suite: :strong,
-  #   certfile: "priv/cert/selfsigned.pem",
-  #   keyfile: "priv/cert/selfsigned_key.pem"
-  # ],
+  https: [
+    port: 443,
+    cipher_suite: :strong,
+    otp_app: :server,
+    keyfile: "priv/cert/selfsigned_key.pem",
+    certfile: "priv/cert/selfsigned.pem"
+  ],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,

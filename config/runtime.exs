@@ -52,7 +52,6 @@ if config_env() == :prod do
   port = String.to_integer(System.get_env("PORT") || "4000")
 
   config :server, ServerWeb.Endpoint,
-    url: [host: host],
     http: [
       port: port
     ],
