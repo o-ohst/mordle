@@ -9,10 +9,11 @@ defmodule ServerWeb.RoomChannel do
 
   @impl true
   def join("room:" <> roomId, payload, socket) do
-    {status, _} = Server.Datastore.joinRoom(roomId, socket.assigns.playerId, payload[:playerName])
+    {status, _} = Server.Datastore.joinRoom(roomId, socket.assigns.playerId, payload["playerName"])
     send(self(), :after_join)
+    IO.inspect(payload["playerName"])
     if status == :ok do
-      {:ok,  assign(socket, :playerName, payload["playerName"])}
+      {:ok, assign(socket, :playerName, payload["playerName"])}
     else
       {:error, %{reason: "invalid room id"}}
     end
@@ -41,24 +42,71 @@ defmodule ServerWeb.RoomChannel do
     "room:" <> roomId = socket.topic
     {:ok, data} = Server.Datastore.getRoom(roomId)
     broadcast(socket, "joined", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName} |> Map.put(:data, data))
-    # %{roomId: r, players: p, state: s} = Server.Datastore.getRoom(roomId)
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_in("ready", payload, socket) do
+    "room:" <> roomId = socket.topic
+    broadcast(socket, "ready", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName})
+    {:ok, %{allReady: allReady}} = Server.Datastore.ready(socket.assigns.playerId, roomId)
+    {:ok, roomData} = Server.Datastore.getRoom(roomId)
+    if allReady && length(roomData[:players]) >= 2 do
+      broadcast(socket, "start_game", payload)
+      Task.start(fn ->
+        :timer.sleep(3000)
+        broadcast(socket, "start_round", %{})
+      end)
+    end
+    {:noreply, socket}
+  end
+
+  defp endRound(roomId, socket) do
+    {:ok, data} = Server.Datastore.endRound(roomId)
+    if !data[:gameOver] do
+      Task.start(fn ->
+        :timer.sleep(5000)
+        broadcast(socket, "start_round", %{})
+      end)
+    else
+      Server.Datastore.endGame(roomId)
+    end
+    broadcast(socket, "end_round", data)
+
   end
 
   @impl true
   def handle_in("new_guess", payload, socket) do
-    broadcast(socket, "new_guess",  %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName} |> Map.merge(payload) )
     # IO.inspect(:ets.lookup(:rooms, :ets.first(:rooms)))
-    {:noreply, socket}
-  end
+    "room:" <> roomId = socket.topic
 
-  @impl true
-  def handle_in("ready", _payload, socket) do
-    broadcast(socket, "ready", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName})
-    # IO.inspect(:ets.lookup(:rooms, :ets.first(:rooms)))
-    {:noreply, socket}
-  end
+    {status, %{result: result}} = Server.Datastore.evaluateGuess(roomId, socket.assigns.playerId, payload["guess"])
 
+    if status === :ok do
+      {:ok, pData} = Server.Datastore.getPlayer(socket.assigns.playerId)
+
+      row = pData[:row]
+      broadcast(socket, "new_guess",  %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, row: row})
+
+      if result === "22222" do #correct
+        {:ok, %{allFinished: f}} = Server.Datastore.finish(socket.assigns.playerId, roomId, true)
+        broadcast(socket, "finish", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, result: "correct"})
+        if f, do: endRound(roomId, socket)
+        {:reply, {:ok, %{result: result, allFinished: f}}, socket}
+      else
+        if pData[:row] >= 6 do #run out of guesses
+        {:ok, %{allFinished: f}} = Server.Datastore.finish(socket.assigns.playerId, roomId, false)
+        broadcast(socket, "finish", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, result: "wrong"})
+        if f, do: endRound(roomId, socket)
+        {:reply, {:ok, %{result: result, allFinished: f, row: row}}, socket}
+        else
+          {:reply, {:ok, %{result: result, allFinished: false, row: row}}, socket}
+        end
+      end
+    else
+      {:noreply, socket}
+    end
+  end
 
   # Phoenix.Channel.intercept(["presence_diff"])
 
@@ -73,7 +121,7 @@ defmodule ServerWeb.RoomChannel do
   # end
 
   # Add authorization logic here as required.
-  defp authorized?(_payload) do
-    true
-  end
+  # defp authorized?(_payload) do
+  #   true
+  # end
 end

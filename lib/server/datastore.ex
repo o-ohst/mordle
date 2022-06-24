@@ -2,9 +2,9 @@ defmodule Server.Datastore do
   use GenServer
 
   # rooms (set)
-  #   {id, players:{}, state, word}
+  #   {id, players:{}, started, word, round}
   # players (set)
-  #   {id, roomId, state}
+  #   {id, roomId, state, row, score}
   # guesses (bag)
   #   {guess, playerId, roomId, row, result}
   ## presence (set)
@@ -26,57 +26,128 @@ defmodule Server.Datastore do
     :ets.new(:allowed, [:set, :named_table])
     :ets.insert(:allowed, word_list)
     # :ets.new(:presence, [:set, :named_table, :public])
-    IO.puts("initialized genserver ets")
     {:ok, "Done"}
   end
 
-  def handle_call({:getRoom, roomId}, ref, state) do
-    [{id, players, rState, word}] = :ets.lookup(:rooms, roomId)
-    res = %{roomId: id, players: players |> Enum.map(fn {a, b} -> %{playerId: a, playerName: b} end), state: rState}
-    IO.inspect(res)
+  def handle_call({:getRoom, roomId}, _ref, state) do
+    [{id, players, started, _word, round}] = :ets.lookup(:rooms, roomId)
+    res = %{roomId: id, players: players |> Enum.map(fn {a, b} -> %{playerId: a, playerName: b} end), started: started, round: round}
     {:reply, res, state}
   end
 
   def handle_call({:createRoom, data}, _ref, state) do
     :ets.insert(:rooms, data)
-    IO.puts("ets inserted room")
-    # :ets.insert(:presence, {data |> elem(1), 0})
+    IO.inspect(data)
     {:reply, :ok, state}
   end
 
   def handle_call({:joinRoom, data}, _ref, state) do
     {roomId, playerId, playerName} = data
     :ets.update_element(:rooms, roomId, {2, [ {playerId, playerName} | :ets.lookup_element(:rooms, roomId, 2) ]})
-    IO.puts("ets joined room")
+    :ets.insert(:players, {playerId, roomId, "joined", 0, 0})
     {:reply, :ok, state}
   end
 
   def handle_call({:deleteRoom, data}, _ref, state) do #remove all data from room players
     {roomId} = data
-    IO.write("removing room ")
-    IO.puts(roomId)
     :ets.delete(:rooms, roomId)
-    :ets.delete(:presence, roomId)
-    players = :ets.match(:rooms, {'_', '$1', '_'})
-    for p <- players do
+    # :ets.delete(:presence, roomId)
+    players = :ets.match(:rooms, {roomId, :"$1", :_, :_, :_})
+    for p <- players |> Enum.flat_map(&Function.identity/1) do
       :ets.delete(:players, p)
-      :ets.match_delete(:guesses, {'_', p, '_', '_', '_'})
+      :ets.match_delete(:guesses, {:_, p, :_, :_, :_})
     end
     {:reply, :ok, state}
   end
+
+  def handle_call({:getPlayer, playerId}, _ref, state) do
+    [{id, roomId, pState, row, score}] = :ets.lookup(:players, playerId)
+    res = %{playerId: id, roomId: roomId, state: pState, row: row, score: score}
+    {:reply, res, state}
+  end
+
+  def handle_call({:guess, data}, _ref, state) do
+    {roomId, playerId, guess} = data
+    correctLetters = :ets.lookup_element(:rooms, roomId, 4) |> String.graphemes()
+    guessLetters = guess |> String.graphemes()
+    result =
+      Enum.zip(correctLetters, guessLetters)
+      |> Enum.map(fn {a, b} ->
+        if a === b do
+          2
+        else
+          if Enum.member?(correctLetters, b), do: 1, else: 0
+        end
+      end)
+      |> Enum.join()
+    row = :ets.lookup_element(:players, playerId, 4) + 1
+    :ets.insert(:guesses, {guess, roomId, playerId, row, result})
+    :ets.update_counter(:players, playerId, {4, 1})
+    {:reply, %{result: result}, state}
+  end
+
+  def handle_call({:ready, data}, _ref, state) do
+    {playerId, roomId} = data
+    :ets.update_element(:players, playerId, {3, "ready"})
+    allReady = :ets.match(:players, {:_, roomId, :"$1", :_, :_})
+      |> Enum.flat_map(&Function.identity/1)
+      |> Enum.reduce(fn x, acc -> x === "ready" && acc end)
+    {:reply, %{allReady: allReady}, state}
+  end
+
+  def handle_call({:finish, data}, _ref, state) do
+    {playerId, roomId, correct} = data
+    numPlayers = :ets.lookup_element(:rooms, roomId, 2) |> length()
+    numCorrectSoFar = :ets.match(:players, {:"$1", roomId, "correct", :_, :_}) |> length()
+    score = if correct, do: numPlayers - numCorrectSoFar, else: 0
+
+    :ets.update_element(:players, playerId, {5, score + :ets.lookup_element(:players, playerId, 5)})
+    :ets.update_element(:players, playerId, {3, (if correct, do: "correct", else: "wrong")})
+    IO.inspect(:ets.match(:players, {:_, roomId, :"$1", :_, :_})
+      |> Enum.flat_map(&Function.identity/1))
+    allFinished = :ets.match(:players, {:_, roomId, :"$1", :_, :_})
+      |> Enum.flat_map(&Function.identity/1)
+      |> Enum.reduce(true, fn x, acc -> (x === "correct" || x === "wrong") && acc end)
+
+    {:reply, %{allFinished: allFinished}, state}
+  end
+
+  def handle_call({:endRound, {roomId}}, _ref, state) do
+    :ets.update_counter(:rooms, roomId, {5, 1})
+    [{_, _, _, word, round}] = :ets.lookup(:rooms, roomId)
+    gameOver = round === 3
+
+    :ets.update_element(:rooms, roomId, {4, Helpers.randomWord()})
+    :ets.match_delete(:guesses, {:_, :_, roomId, :_, :_})
+    :ets.match(:players, {:"$1", roomId, :_, :_, :_})
+      |> Enum.flat_map(&Function.identity/1)
+      |> Enum.each(fn x ->
+        :ets.update_element(:players, x, {3, "ready"})
+        :ets.update_element(:players, x, {4, 0})
+      end)
+
+    IO.inspect(:ets.lookup(:rooms, roomId))
+
+    scores = :ets.match(:players, {:"$1", roomId, :_, :_, :_})
+      |> Enum.flat_map(&Function.identity/1)
+      |> Enum.reduce(%{}, fn x, acc -> acc |> Map.put(x, :ets.lookup_element(:players, x, 5)) end)
+
+    {:reply, %{gameOver: gameOver, scores: scores, word: word}, state}
+  end
+
+
+
+
 
   ### main client helpers
 
   def getRoom(roomId) do
     res = GenServer.call(@name, {:getRoom, roomId})
-    IO.inspect(res)
     {:ok, res}
   end
 
   def createRoom() do
-    roomData = {roomId, [], state, word} = {Helpers.randomRoomId(), [], "created" , Helpers.randomWord()}
-    IO.write("createRoom ")
-    IO.inspect(roomData)
+    roomData = {roomId, [], _started, _word, _round} = {Helpers.randomRoomId(), [], false, Helpers.randomWord(), 0}
     GenServer.call(@name, {:createRoom, roomData})
     {:ok, %{roomId: roomId}}
   end
@@ -88,6 +159,36 @@ defmodule Server.Datastore do
     else
       {:error, %{reason: "invalid room id"}}
     end
+  end
+
+  def getPlayer(playerId) do
+    res = GenServer.call(@name, {:getPlayer, playerId})
+    {:ok, res}
+  end
+
+  def ready(playerId, roomId) do
+    res = GenServer.call(@name, {:ready, {playerId, roomId}})
+    {:ok, res}
+  end
+
+  def evaluateGuess(roomId, playerId, guess) do
+    res = GenServer.call(@name, {:guess, {roomId, playerId, guess}})
+    {:ok, res}
+  end
+
+  def finish(playerId, roomId, correct) do
+    res = GenServer.call(@name, {:finish, {playerId, roomId, correct}})
+    {:ok, res}
+  end
+
+  def endRound(roomId) do
+    res = GenServer.call(@name, {:endRound, {roomId}})
+    {:ok, res}
+  end
+
+  def endGame(roomId) do
+    GenServer.call(@name, {:deleteRoom, {roomId}})
+    {:ok, nil}
   end
 
   # def updateCounter(roomId, opt) do #true for inc, false for dec
