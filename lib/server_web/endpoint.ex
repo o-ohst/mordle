@@ -15,7 +15,7 @@ defmodule ServerWeb.Endpoint do
   socket "/socket", ServerWeb.UserSocket,
     websocket: [timeout: 45_000],
     longpoll: false,
-    check_origin: ["http://localhost:3000"]
+    check_origin: ["http://localhost:3000", "https://mordle-cow.vercel.app"]
 
   # Serve at "/" the static files from "priv/static" directory.
   #
