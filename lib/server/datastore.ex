@@ -31,7 +31,7 @@ defmodule Server.Datastore do
 
   def handle_call({:getRoom, roomId}, _ref, state) do
     [{id, players, started, _word, round}] = :ets.lookup(:rooms, roomId)
-    res = %{roomId: id, players: players |> Enum.map(fn {a, b} -> %{playerId: a, playerName: b} end), started: started, round: round}
+    res = %{roomId: id, players: players |> Enum.map(fn {a, b} -> %{playerId: a, playerName: b, state: :ets.lookup_element(:players, a, 3)} end), started: started, round: round}
     {:reply, res, state}
   end
 
