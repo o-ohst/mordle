@@ -38,6 +38,9 @@ defmodule Server.Datastore do
   def handle_call({:createRoom, data}, _ref, state) do
     :ets.insert(:rooms, data)
     IO.inspect(data)
+    Task.start(fn ->
+        :timer.sleep(3600000) #1 hour
+        endGame(data |> elem(0)) end)
     {:reply, :ok, state}
   end
 
@@ -50,6 +53,7 @@ defmodule Server.Datastore do
 
   def handle_call({:deleteRoom, data}, _ref, state) do #remove all data from room players
     {roomId} = data
+    IO.puts("delete room " <> roomId)
     :ets.delete(:rooms, roomId)
     # :ets.delete(:presence, roomId)
     players = :ets.match(:rooms, {roomId, :"$1", :_, :_, :_})

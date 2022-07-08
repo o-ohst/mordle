@@ -19,7 +19,8 @@ defmodule Server.Application do
       ServerWeb.Endpoint,
       # Start a worker by calling: Server.Worker.start_link(arg)
       # {Server.Worker, arg}
-      Server.Datastore
+      Server.Datastore,
+      Server.Singleplayer
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

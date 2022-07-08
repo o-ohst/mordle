@@ -89,16 +89,16 @@ defmodule ServerWeb.RoomChannel do
       broadcast(socket, "new_guess",  %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, row: row})
 
       if result === "22222" do #correct
-        {:ok, %{allFinished: f}} = Server.Datastore.finish(socket.assigns.playerId, roomId, true)
+        {:ok, %{allFinished: allFinished}} = Server.Datastore.finish(socket.assigns.playerId, roomId, true)
         broadcast(socket, "finish", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, result: "correct"})
-        if f, do: endRound(roomId, socket)
-        {:reply, {:ok, %{result: result, allFinished: f}}, socket}
+        if allFinished, do: endRound(roomId, socket)
+        {:reply, {:ok, %{result: result, allFinished: allFinished}}, socket}
       else
         if pData[:row] >= 6 do #run out of guesses
-        {:ok, %{allFinished: f}} = Server.Datastore.finish(socket.assigns.playerId, roomId, false)
+        {:ok, %{allFinished: allFinished}} = Server.Datastore.finish(socket.assigns.playerId, roomId, false)
         broadcast(socket, "finish", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, result: "wrong"})
-        if f, do: endRound(roomId, socket)
-        {:reply, {:ok, %{result: result, allFinished: f, row: row}}, socket}
+        if allFinished, do: endRound(roomId, socket)
+        {:reply, {:ok, %{result: result, allFinished: allFinished, row: row}}, socket}
         else
           {:reply, {:ok, %{result: result, allFinished: false, row: row}}, socket}
         end

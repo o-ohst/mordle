@@ -26,6 +26,8 @@ defmodule ServerWeb.Router do
 
     get "/register", ApiController, :register
     get "/create-room", ApiController, :createRoom
+    post "/guess", ApiController, :guess
+    post "/end", ApiController, :ends
   end
 
   # Enables LiveDashboard only for development
