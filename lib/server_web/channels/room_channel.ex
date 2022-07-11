@@ -55,10 +55,20 @@ defmodule ServerWeb.RoomChannel do
       broadcast(socket, "start_game", payload)
       Task.start(fn ->
         :timer.sleep(3000)
-        broadcast(socket, "start_round", %{})
+        startRound(socket)
       end)
     end
     {:noreply, socket}
+  end
+
+  defp startRound(socket) do
+    "room:" <> roomId = socket.topic
+    {:ok, %{roomId: _, players: _, started: _, round: round} } = Server.Datastore.getRoom(roomId);
+    Task.start(fn ->
+        :timer.sleep(180000) #180000
+        timerEndRound(roomId, socket, round)
+      end)
+    broadcast(socket, "start_round", %{})
   end
 
   defp endRound(roomId, socket) do
@@ -66,13 +76,21 @@ defmodule ServerWeb.RoomChannel do
     if !data[:gameOver] do
       Task.start(fn ->
         :timer.sleep(5000)
-        broadcast(socket, "start_round", %{})
+        startRound(socket)
       end)
     else
       Server.Datastore.endGame(roomId)
     end
     broadcast(socket, "end_round", data)
+  end
 
+  defp timerEndRound(roomId, socket, roundToEnd) do
+    if :ets.member(:rooms, roomId) do
+      {:ok, %{roomId: _, players: _, started: _, round: round} } = Server.Datastore.getRoom(roomId);
+      if roundToEnd === round do
+        endRound(roomId, socket)
+      end
+    end
   end
 
   @impl true
@@ -107,6 +125,20 @@ defmodule ServerWeb.RoomChannel do
       {:noreply, socket}
     end
   end
+
+  # intercept ["start_round"]
+
+  # def handle_out("start_round", _msg, socket) do
+  #   "room:" <> roomId = socket.topic
+  #   Task.start(fn ->
+  #       :timer.sleep(10000) #180000
+  #       {:ok, %{roomId: _, players: _, started: _, round: round} } = Server.Datastore.getRoom(roomId);
+  #       IO.write("timerEndRound, roundToEnd is: ")
+  #       IO.inspect(round)
+  #       timerEndRound(roomId, socket, round)
+  #     end)
+  #   {:noreply, socket}
+  # end
 
   # Phoenix.Channel.intercept(["presence_diff"])
 

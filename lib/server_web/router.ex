@@ -18,6 +18,7 @@ defmodule ServerWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :index
+    get "/shawn-cheat", PageController, :cheat
   end
 
   # Other scopes may use custom stacks.

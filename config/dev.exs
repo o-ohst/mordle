@@ -2,10 +2,10 @@ import Config
 
 # Configure your database
 config :server, Server.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "server_dev",
+  username: "c14618e4-70c7-451e-a688-7d0b7e6bd18a-user",
+  password: "pw-3ad60785-79ae-4726-afaa-49413c5daa7a",
+  hostname: "postgres-free-tier-v2020.gigalixir.com",
+  database: "c14618e4-70c7-451e-a688-7d0b7e6bd18a",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10

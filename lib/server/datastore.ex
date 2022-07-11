@@ -38,9 +38,6 @@ defmodule Server.Datastore do
   def handle_call({:createRoom, data}, _ref, state) do
     :ets.insert(:rooms, data)
     IO.inspect(data)
-    Task.start(fn ->
-        :timer.sleep(3600000) #1 hour
-        endGame(data |> elem(0)) end)
     {:reply, :ok, state}
   end
 
@@ -53,7 +50,6 @@ defmodule Server.Datastore do
 
   def handle_call({:deleteRoom, data}, _ref, state) do #remove all data from room players
     {roomId} = data
-    IO.puts("delete room " <> roomId)
     :ets.delete(:rooms, roomId)
     # :ets.delete(:presence, roomId)
     players = :ets.match(:rooms, {roomId, :"$1", :_, :_, :_})
@@ -107,8 +103,6 @@ defmodule Server.Datastore do
 
     :ets.update_element(:players, playerId, {5, score + :ets.lookup_element(:players, playerId, 5)})
     :ets.update_element(:players, playerId, {3, (if correct, do: "correct", else: "wrong")})
-    IO.inspect(:ets.match(:players, {:_, roomId, :"$1", :_, :_})
-      |> Enum.flat_map(&Function.identity/1))
     allFinished = :ets.match(:players, {:_, roomId, :"$1", :_, :_})
       |> Enum.flat_map(&Function.identity/1)
       |> Enum.reduce(true, fn x, acc -> (x === "correct" || x === "wrong") && acc end)
