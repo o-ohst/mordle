@@ -9,18 +9,19 @@ defmodule Server.Application do
   def start(_type, _args) do
     children = [
       # Start the Ecto repository
-      # Server.Repo,
+      Server.Repo,
       # Start the Telemetry supervisor
       ServerWeb.Telemetry,
       # Start the PubSub system
       {Phoenix.PubSub, name: Server.PubSub},
-      ServerWeb.Presence,
+      # ServerWeb.Presence,
       # Start the Endpoint (http/https)
       ServerWeb.Endpoint,
       # Start a worker by calling: Server.Worker.start_link(arg)
       # {Server.Worker, arg}
       Server.Datastore,
-      Server.Singleplayer
+      Server.Singleplayer,
+      Server.Scheduler
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

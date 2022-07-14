@@ -36,7 +36,7 @@ if config_env() == :prod do
     hostname: "postgres-free-tier-v2020.gigalixir.com",
     database: "c14618e4-70c7-451e-a688-7d0b7e6bd18a",
     url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "2"),
     socket_options: maybe_ipv6
 
   # The secret key base is used to sign/encrypt cookies and other secrets.

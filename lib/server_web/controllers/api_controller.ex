@@ -1,6 +1,8 @@
 defmodule ServerWeb.ApiController do
   use ServerWeb, :controller
 
+  ##multiplayer
+
   def register(conn, _params) do
     conn |> json(%{playerId: Helpers.randomPlayerId()})
   end
@@ -10,6 +12,8 @@ defmodule ServerWeb.ApiController do
     conn
       |> json(%{roomId: roomId})
   end
+
+  ##singleplayer
 
   def guess(conn, params) do
     {:ok, %{result: score}} = Server.Singleplayer.guess(params["guess"])

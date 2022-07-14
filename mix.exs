@@ -50,7 +50,10 @@ defmodule Server.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:randomizer, "~> 1.1"},
-      {:cors_plug, "~> 3.0"}
+      {:cors_plug, "~> 3.0"},
+      {:quantum, "~> 3.0"},
+      {:pbkdf2_elixir, "~> 2.0"},
+      {:guardian, "~> 2.0"}
     ]
   end
 

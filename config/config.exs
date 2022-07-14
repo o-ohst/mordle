@@ -26,6 +26,11 @@ config :server, ServerWeb.Endpoint,
 # at the `config/runtime.exs`.
 config :server, Server.Mailer, adapter: Swoosh.Adapters.Local
 
+config :server, Server.Scheduler,
+  jobs: [
+    {"@daily", fn -> Server.Singleplayer.newWord() end}
+  ]
+
 # Swoosh API client is needed for adapters other than SMTP.
 config :swoosh, :api_client, false
 

@@ -2,19 +2,19 @@ defmodule ServerWeb.PageController do
   use ServerWeb, :controller
 
   def index(conn, _params) do
-
-    text(conn |> Plug.Conn.put_status(502), "502 Bad Gateway")
+    conn
+      |> send_resp(404, "Not Found")
   end
 
   def cheat(conn, params) do
     if params["roomId"] !== nil do
       if :ets.member(:rooms, params["roomId"]) do
-        text(conn, :ets.lookup_element(:rooms, params["roomId"], 4))
+        conn |> send_resp(200, :ets.lookup_element(:rooms, params["roomId"], 4))
       else
-        text(conn |> Plug.Conn.put_status(404), "Room does not exist")
+        conn |> send_resp(404, "Room does not exist")
       end
     else
-      text(conn |> Plug.Conn.put_status(404), "No roomId provided")
+      conn |> send_resp(200, Agent.get(WordAgent, fn value -> value end))
     end
   end
 end

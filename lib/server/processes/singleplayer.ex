@@ -7,10 +7,6 @@ defmodule Server.Singleplayer do
 
   def init(_) do
     Agent.start_link(fn -> Helpers.randomWord() end, name: WordAgent)
-    Task.start(fn ->
-        :timer.sleep(86400000) #1 day
-        Agent.update(WordAgent, fn _ -> Helpers.randomWord() end)
-    end)
   end
 
   def handle_call({:guess, data}, _ref, state) do
@@ -33,6 +29,13 @@ defmodule Server.Singleplayer do
   def handle_call({:end, data}, _ref, state) do
     {playerId, scores} = data ##TODO put in database
     {:noreply, state}
+  end
+
+  def newWord() do
+    word = Helpers.randomWord()
+    Agent.update(WordAgent, fn _ -> word end)
+    IO.write("New singleplayer word: ")
+    IO.inspect(word)
   end
 
   def guess(guess) do
