@@ -31,10 +31,6 @@ if config_env() == :prod do
   maybe_ipv6 = if System.get_env("ECTO_IPV6"), do: [:inet6], else: []
 
   config :server, Server.Repo,
-    username: "c14618e4-70c7-451e-a688-7d0b7e6bd18a-user",
-    password: "pw-3ad60785-79ae-4726-afaa-49413c5daa7a",
-    hostname: "postgres-free-tier-v2020.gigalixir.com",
-    database: "c14618e4-70c7-451e-a688-7d0b7e6bd18a",
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "2"),
     socket_options: maybe_ipv6

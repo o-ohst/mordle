@@ -26,7 +26,7 @@ defmodule ServerWeb.Router do
     pipe_through :api
 
     post "/signup", UserController, :signUp
-    get "/login", UserController, :login
+    post "/login", UserController, :login
 
     get "/register", ApiController, :register
     get "/create-room", ApiController, :createRoom

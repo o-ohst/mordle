@@ -12,6 +12,10 @@ defmodule ServerWeb.UserController do
   end
 
   def login(conn, params) do
-    
+    if Auth.verifyPassword?(params["password"], Server.Repo.get_by(Server.User, username: params["username"]).password) do
+      conn |> send_resp(200, "Success")
+    else
+      conn |> send_resp(401, "Unauthorized")
+    end
   end
 end

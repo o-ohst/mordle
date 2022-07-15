@@ -8,5 +8,6 @@ defmodule Server.Repo.Migrations.CreateUsersTable do
       add :name, :string, null: false
       timestamps()
     end
+    create unique_index(:users, [:username])
   end
 end

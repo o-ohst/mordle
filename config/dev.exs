@@ -2,10 +2,7 @@ import Config
 
 # Configure your database
 config :server, Server.Repo,
-  username: "c14618e4-70c7-451e-a688-7d0b7e6bd18a-user",
-  password: "pw-3ad60785-79ae-4726-afaa-49413c5daa7a",
-  hostname: "postgres-free-tier-v2020.gigalixir.com",
-  database: "c14618e4-70c7-451e-a688-7d0b7e6bd18a",
+  url: System.get_env("DATABASE_URL"),
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 2
@@ -32,7 +29,7 @@ config :server, ServerWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "tgBeWqepcFNVAsEREP95t0JOZUGl5luc07u/zi34WLbFxopLasUD/nH6SEiTf9G2",
+  secret_key_base: System.get_env("SECRET_KEY_BASE"),
   watchers: [
     # Start the esbuild watcher by calling Esbuild.install_and_run(:default, args)
     esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]}
