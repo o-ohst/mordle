@@ -90,7 +90,7 @@ defmodule Server.Datastore do
     :ets.update_element(:players, playerId, {3, "ready"})
     allReady = :ets.match(:players, {:_, roomId, :"$1", :_, :_})
       |> Enum.flat_map(&Function.identity/1)
-      |> Enum.reduce(fn x, acc -> x === "ready" && acc end)
+      |> Enum.all?(fn s -> s === "ready" end)
     {:reply, %{allReady: allReady}, state}
   end
 
@@ -110,6 +110,7 @@ defmodule Server.Datastore do
   end
 
   def handle_call({:startRound, {roomId}}, _ref, state) do
+    :ets.update_element(:rooms, roomId, {3, true})
     :ets.update_counter(:rooms, roomId, {5, 1})
     :ets.update_element(:rooms, roomId, {4, Helpers.randomWord()})
     :ets.match(:players, {:"$1", roomId, :_, :_, :_})
@@ -123,7 +124,7 @@ defmodule Server.Datastore do
   end
 
   def handle_call({:endRound, {roomId}}, _ref, state) do
-
+    :ets.update_element(:rooms, roomId, {3, false})
     [{_, _, _, word, round}] = :ets.lookup(:rooms, roomId)
     gameOver = round === 3
 

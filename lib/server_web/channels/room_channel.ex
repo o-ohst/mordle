@@ -46,27 +46,37 @@ defmodule ServerWeb.RoomChannel do
   def handle_in("new_guess", payload, socket) do
     "room:" <> roomId = socket.topic
 
-    {:ok, %{result: result}} = Server.Datastore.evaluateGuess(roomId, socket.assigns.playerId, payload["guess"])
+    if :ets.lookup_element(:rooms, roomId, 3) do
+      {:ok, %{result: result}} = Server.Datastore.evaluateGuess(roomId, socket.assigns.playerId, payload["guess"])
+      {:ok, pData} = Server.Datastore.getPlayer(socket.assigns.playerId)
 
-    {:ok, pData} = Server.Datastore.getPlayer(socket.assigns.playerId)
+      row = pData[:row]
+      broadcast(socket, "new_guess",  %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, row: row})
 
-    row = pData[:row]
-    broadcast(socket, "new_guess",  %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, row: row})
+      if result === "22222" do #correct
+        {:ok, %{allFinished: allFinished}} = Server.Datastore.finish(socket.assigns.playerId, roomId, true)
+        broadcast(socket, "finish", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, result: "correct"})
+        if allFinished do
+          IO.puts("allFinished, correct")
+          endRound(roomId, socket)
 
-    if result === "22222" do #correct
-      {:ok, %{allFinished: allFinished}} = Server.Datastore.finish(socket.assigns.playerId, roomId, true)
-      broadcast(socket, "finish", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, result: "correct"})
-      if allFinished, do: endRound(roomId, socket)
-      {:reply, {:ok, %{result: result, allFinished: allFinished}}, socket}
-    else
-      if pData[:row] >= 6 do #run out of guesses
-      {:ok, %{allFinished: allFinished}} = Server.Datastore.finish(socket.assigns.playerId, roomId, false)
-      broadcast(socket, "finish", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, result: "wrong"})
-      if allFinished, do: endRound(roomId, socket)
-      {:reply, {:ok, %{result: result, allFinished: allFinished, row: row}}, socket}
+        end
+        {:reply, {:ok, %{result: result, allFinished: allFinished}}, socket}
       else
-        {:reply, {:ok, %{result: result, allFinished: false, row: row}}, socket}
+        if row >= 6 do #run out of guesses
+        {:ok, %{allFinished: allFinished}} = Server.Datastore.finish(socket.assigns.playerId, roomId, false)
+        broadcast(socket, "finish", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName, result: "wrong"})
+        if allFinished do
+          IO.puts("allFinished, ran out")
+          endRound(roomId, socket)
+        end
+        {:reply, {:ok, %{result: result, allFinished: allFinished, row: row}}, socket}
+        else
+          {:reply, {:ok, %{result: result, allFinished: false, row: row}}, socket}
+        end
       end
+    else
+      {:reply, {:error, nil}, socket}
     end
   end
 
@@ -74,9 +84,9 @@ defmodule ServerWeb.RoomChannel do
     IO.puts("Round start")
     "room:" <> roomId = socket.topic
     Server.Datastore.startRound(roomId)
-    {:ok, %{roomId: _, players: _, started: _, round: round} } = Server.Datastore.getRoom(roomId);
+    round = :ets.lookup_element(:rooms, roomId, 5)
     Task.start(fn ->
-        :timer.sleep(30000) #180000
+        :timer.sleep(31000) #181000
         timerEndRound(roomId, socket, round)
       end)
     broadcast(socket, "start_round", %{})
@@ -98,8 +108,8 @@ defmodule ServerWeb.RoomChannel do
   end
 
   defp timerEndRound(roomId, socket, roundToEnd) do
-    if :ets.member(:rooms, roomId) do
-      {:ok, %{roomId: _, players: _, started: _, round: round} } = Server.Datastore.getRoom(roomId);
+    if :ets.member(:rooms, roomId) && :ets.lookup_element(:rooms, roomId, 3) do
+      round = :ets.lookup_element(:rooms, roomId, 5)
       if roundToEnd === round do
         IO.write("Timer: ")
         endRound(roomId, socket)
