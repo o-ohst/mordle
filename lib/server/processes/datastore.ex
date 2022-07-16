@@ -17,7 +17,6 @@ defmodule Server.Datastore do
   def start_link(_), do: GenServer.start_link(__MODULE__, [], name: @name)
 
   def init(_) do
-    IO.puts("Creating ETS #{@name}")
     :ets.new(:rooms, [:set, :named_table, :public])
     :ets.new(:players, [:set, :named_table])
     :ets.new(:guesses, [:bag, :named_table])
@@ -110,21 +109,25 @@ defmodule Server.Datastore do
     {:reply, %{allFinished: allFinished}, state}
   end
 
-  def handle_call({:endRound, {roomId}}, _ref, state) do
+  def handle_call({:startRound, {roomId}}, _ref, state) do
     :ets.update_counter(:rooms, roomId, {5, 1})
+    :ets.update_element(:rooms, roomId, {4, Helpers.randomWord()})
+    :ets.match(:players, {:"$1", roomId, :_, :_, :_})
+    |> Enum.flat_map(&Function.identity/1)
+    |> Enum.each(fn x ->
+      :ets.update_element(:players, x, {3, "ready"})
+      :ets.update_element(:players, x, {4, 0})
+    end)
+    IO.inspect(:ets.lookup(:rooms, roomId))
+    {:reply, :ok, state}
+  end
+
+  def handle_call({:endRound, {roomId}}, _ref, state) do
+
     [{_, _, _, word, round}] = :ets.lookup(:rooms, roomId)
     gameOver = round === 3
 
-    :ets.update_element(:rooms, roomId, {4, Helpers.randomWord()})
     :ets.match_delete(:guesses, {:_, :_, roomId, :_, :_})
-    :ets.match(:players, {:"$1", roomId, :_, :_, :_})
-      |> Enum.flat_map(&Function.identity/1)
-      |> Enum.each(fn x ->
-        :ets.update_element(:players, x, {3, "ready"})
-        :ets.update_element(:players, x, {4, 0})
-      end)
-
-    IO.inspect(:ets.lookup(:rooms, roomId))
 
     scores = :ets.match(:players, {:"$1", roomId, :_, :_, :_})
       |> Enum.flat_map(&Function.identity/1)
@@ -145,7 +148,7 @@ defmodule Server.Datastore do
   end
 
   def createRoom() do
-    roomData = {roomId, [], _started, _word, _round} = {Helpers.randomRoomId(), [], false, Helpers.randomWord(), 0}
+    roomData = {roomId, [], _started, _word, _round} = {Helpers.randomRoomId(), [], false, "", 0}
     GenServer.call(@name, {:createRoom, roomData})
     {:ok, %{roomId: roomId}}
   end
@@ -179,6 +182,11 @@ defmodule Server.Datastore do
     {:ok, res}
   end
 
+  def startRound(roomId) do
+    res = GenServer.call(@name, {:startRound, {roomId}})
+    {:ok, res}
+  end
+
   def endRound(roomId) do
     res = GenServer.call(@name, {:endRound, {roomId}})
     {:ok, res}
@@ -188,23 +196,4 @@ defmodule Server.Datastore do
     GenServer.call(@name, {:deleteRoom, {roomId}})
     {:ok, nil}
   end
-
-  # def updateCounter(roomId, opt) do #true for inc, false for dec
-  #   if (opt) do
-  #     :ets.update_counter(:presence, roomId, {2, 1})
-  #     IO.puts("presence +1")
-  #     IO.write("current presence: ")
-  #     IO.inspect(:ets.lookup_element(:presence, roomId, 2))
-  #   else
-  #     :ets.update_counter(:presence, roomId, {2, -1})
-  #     IO.puts("presence -1")
-  #     IO.write("current presence: ")
-  #     IO.inspect(:ets.lookup_element(:presence, roomId, 2))
-  #   end
-  #   if (:ets.lookup_element(:presence, roomId, 2) === 0) do
-  #     IO.write("current presence: ")
-  #     IO.inspect(:ets.lookup_element(:presence, roomId, 2))
-  #     GenServer.call(@name, {:deleteRoom, {roomId}})
-  #   end
-  # end
 end
