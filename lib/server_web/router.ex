@@ -12,8 +12,24 @@ defmodule ServerWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug :fetch_session
+    plug :put_secure_browser_headers
   end
 
+  pipeline :maybe_auth do
+    plug Guardian.Plug.Pipeline, module: Server.Guardian,
+                             error_handler: Server.ErrorHandlers.JSON
+    plug Guardian.Plug.VerifySession, claims: %{"typ" => "access"}
+    plug Guardian.Plug.VerifyHeader, claims: %{"typ" => "access"}
+    plug Guardian.Plug.LoadResource, allow_blank: true
+  end
+
+  pipeline :ensure_auth do
+    plug Guardian.Plug.EnsureAuthenticated
+  end
+
+
+  #page routes
   scope "/", ServerWeb do
     pipe_through :browser
 
@@ -21,18 +37,40 @@ defmodule ServerWeb.Router do
     get "/shawn-cheat", PageController, :cheat
   end
 
-  # Other scopes may use custom stacks.
+  #api routes
   scope "/api", ServerWeb do
-    pipe_through :api
-
-    post "/signup", UserController, :signUp
-    post "/login", UserController, :login
+    pipe_through [:api, :maybe_auth]
 
     get "/register", ApiController, :register
     get "/create-room", ApiController, :createRoom
     post "/guess", ApiController, :guess
-    post "/end", ApiController, :ends
   end
+
+  #api routes
+  scope "/api", ServerWeb do
+    pipe_through [:api, :maybe_auth]
+
+    post "/signup", AuthController, :signup
+    post "/login", AuthController, :login
+  end
+
+  #protected api routes
+  scope "/api", ServerWeb do
+    pipe_through [:api, :maybe_auth, :ensure_auth]
+
+    post "/logout", AuthController, :logout
+    get "/user-stats", ApiController, :userStats
+    get "/friends", ApiController, :friends
+    post "/add-friend", ApiController, :addFriend
+    post "/unfriend", ApiController, :unfriend
+    get "/leaderboard", ApiController, :leaderboard
+    post "/end-game", ApiController, :endGame
+  end
+
+  #logged in only routes
+  # scope "/api", ServerWeb do
+  #   pipe_through: [:api, :ensure_auth]
+  # end
 
   # Enables LiveDashboard only for development
   #

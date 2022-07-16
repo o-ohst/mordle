@@ -56,7 +56,8 @@ config :phoenix, :json_library, Jason
 
 config :server, Server.Guardian,
        issuer: "server",
-       secret_key: System.get_env("SECRET_KEY_BASE")
+       secret_key: System.get_env("SECRET_KEY_BASE"),
+       ttl: { 365, :days }
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -16,6 +16,6 @@ defmodule Server.Result do
   def changeset(result, attrs) do
     result
     |> cast(attrs, [])
-    |> validate_required([])
+    |> validate_required([:scores, :userId, :numGuesses, :date, :timeTaken])
   end
 end

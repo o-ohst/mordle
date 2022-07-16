@@ -3,8 +3,8 @@ defmodule Server.Friend do
   import Ecto.Changeset
 
   schema "friends" do
-    field :user1, :integer
-    field :user2, :integer
+    field :userId, :integer
+    field :friendId, :integer
     timestamps()
     belongs_to :user, Server.User
   end
@@ -13,6 +13,7 @@ defmodule Server.Friend do
   def changeset(friend, attrs) do
     friend
     |> cast(attrs, [])
-    |> validate_required([])
+    |> validate_required([:userId, :friendId])
+    |> unique_constraint([:userId, :friendId])
   end
 end

@@ -3,9 +3,10 @@ defmodule Server.Repo.Migrations.CreateFriendsTable do
 
   def change do
     create table(:friends) do
-      add :user1, references(:users), null: false
-      add :user2, :integer, null: false
+      add :userId, references(:users), null: false
+      add :friendId, references(:users), null: false
       timestamps()
     end
+    create unique_index(:friends, [:userId, :friendId], name: :friendship_index)
   end
 end
