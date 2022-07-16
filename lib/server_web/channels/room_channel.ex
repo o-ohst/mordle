@@ -38,7 +38,7 @@ defmodule ServerWeb.RoomChannel do
       IO.puts("Game start")
       broadcast(socket, "start_game", payload)
       Task.start(fn ->
-        :timer.sleep(30000)
+        :timer.sleep(3000)
         startRound(socket)
       end)
     end
