@@ -5,6 +5,7 @@ defmodule ServerWeb.RoomChannel do
   def join("room:" <> roomId, payload, socket) do
     {status, _} = Server.Datastore.joinRoom(roomId, socket.assigns.playerId, payload["playerName"])
     if status == :ok do
+      send(self, :joined)
       {:ok, assign(socket, :playerName, payload["playerName"])}
     else
       {:error, %{reason: "invalid room id"}}
@@ -21,7 +22,7 @@ defmodule ServerWeb.RoomChannel do
   # It is also common to receive messages from the client and
   # broadcast to everyone in the current topic (room:lobby).
   @impl true
-  def handle_in("joined", _payload, socket) do
+  def handle_info(:joined, socket) do
     "room:" <> roomId = socket.topic
     {:ok, data} = Server.Datastore.getRoom(roomId)
     broadcast(socket, "joined", %{playerId: socket.assigns.playerId, playerName: socket.assigns.playerName} |> Map.put(:data, data))
