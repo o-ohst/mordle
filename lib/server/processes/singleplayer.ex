@@ -26,11 +26,6 @@ defmodule Server.Singleplayer do
     {:reply, %{result: result}, state}
   end
 
-  def handle_call({:end, data}, _ref, state) do
-    {playerId, scores} = data ##TODO put in database
-    {:noreply, state}
-  end
-
   def newWord() do
     word = Helpers.randomWord()
     Agent.update(WordAgent, fn _ -> word end)
@@ -43,9 +38,8 @@ defmodule Server.Singleplayer do
     {:ok, res}
   end
 
-  def ends(playerId, scores) do
-    GenServer.call(@name, {:end, {playerId, scores}})
-    {:ok, nil}
+  def getWord() do
+    Agent.get(WordAgent, fn w -> w end)
   end
 
 end

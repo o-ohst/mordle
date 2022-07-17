@@ -33,7 +33,8 @@ defmodule ServerWeb.ApiController do
         timeTaken: params["timeTaken"],
         userId: user,
         date: Date.utc_today()})
-      conn |> send_resp(200, "Success")
+      word = Server.Singleplayer.getWord()
+      conn |> json(%{word: word})
     end
   end
 
@@ -48,6 +49,12 @@ defmodule ServerWeb.ApiController do
         fn t -> %{numGuesses: elem(t, 0), timeTaken: elem(t, 1), date: elem(t, 2)} end )
     conn
       |> json(%{results: results})
+  end
+
+  def playedToday(conn, _params) do
+    user = conn |> Server.Guardian.Plug.current_resource()
+    played = Repo.exists?(from r in Result, where: r.userId == ^user and r.date == ^Date.utc_today())
+    conn |> json(%{played: played})
   end
 
   @spec leaderboard(Plug.Conn.t(), any) :: Plug.Conn.t()

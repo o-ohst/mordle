@@ -44,11 +44,6 @@ defmodule ServerWeb.Router do
     get "/register", ApiController, :register
     get "/create-room", ApiController, :createRoom
     post "/guess", ApiController, :guess
-  end
-
-  #api routes
-  scope "/api", ServerWeb do
-    pipe_through [:api, :maybe_auth]
 
     post "/signup", AuthController, :signup
     post "/login", AuthController, :login
@@ -59,6 +54,8 @@ defmodule ServerWeb.Router do
     pipe_through [:api, :maybe_auth, :ensure_auth]
 
     post "/logout", AuthController, :logout
+    
+    get "/played-today", ApiController, :playedToday
     get "/user-stats", ApiController, :userStats
     get "/friends", ApiController, :friends
     post "/add-friend", ApiController, :addFriend
