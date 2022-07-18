@@ -24,15 +24,20 @@ defmodule ServerWeb.ApiController do
   end
 
   def endGame(conn, params) do
-    user = conn |> Server.Guardian.Plug.current_resource()
-    if Repo.exists?(from r in Result, where: r.userId == ^user and r.date == ^Date.utc_today()) do
-      conn |> send_resp(400, "Result exists for today")
+    if Server.Guardian.Plug.authenticated?(conn) do
+      user = conn |> Server.Guardian.Plug.current_resource()
+      if Repo.exists?(from r in Result, where: r.userId == ^user and r.date == ^Date.utc_today()) do
+        conn |> send_resp(400, "Result exists for today")
+      else
+        Repo.insert(%Result{scores: params["scores"],
+          numGuesses: length(params["scores"]),
+          timeTaken: params["timeTaken"],
+          userId: user,
+          date: Date.utc_today()})
+        word = Server.Singleplayer.getWord()
+        conn |> json(%{word: word})
+      end
     else
-      Repo.insert(%Result{scores: params["scores"],
-        numGuesses: length(params["scores"]),
-        timeTaken: params["timeTaken"],
-        userId: user,
-        date: Date.utc_today()})
       word = Server.Singleplayer.getWord()
       conn |> json(%{word: word})
     end

@@ -86,7 +86,7 @@ defmodule ServerWeb.RoomChannel do
     Server.Datastore.startRound(roomId)
     round = :ets.lookup_element(:rooms, roomId, 5)
     Task.start(fn ->
-        :timer.sleep(31000) #181000
+        :timer.sleep(181000) #181000
         timerEndRound(roomId, socket, round)
       end)
     broadcast(socket, "start_round", %{})
