@@ -51,9 +51,13 @@ defmodule Server.Datastore do
 
   def handle_call({:joinRoom, data}, _ref, state) do
     {roomId, playerId, playerName} = data
-    :ets.update_element(:rooms, roomId, {2, [ {playerId, playerName} | :ets.lookup_element(:rooms, roomId, 2) ]})
-    :ets.insert(:players, {playerId, roomId, "joined", 0, 0})
-    {:reply, :ok, state}
+    if :ets.member(:rooms, roomId) do
+      :ets.update_element(:rooms, roomId, {2, [ {playerId, playerName} | :ets.lookup_element(:rooms, roomId, 2) ]})
+      :ets.insert(:players, {playerId, roomId, "joined", 0, 0})
+      {:reply, :ok, state}
+    else
+      {:reply, :error, state}
+    end
   end
 
   def handle_call({:deleteRoom, data}, _ref, state) do #remove all data from room players
@@ -179,12 +183,17 @@ defmodule Server.Datastore do
 
   @spec joinRoom(any, any, any) :: {:error, %{reason: <<_::120>>}} | {:ok, nil}
   def joinRoom(roomId, playerId, playerName) do
+
     if :ets.member(:players, playerId) do
       if :ets.lookup_element(:players, playerId, 2) === roomId do
         {:error, %{reason: "already in room"}}
       else
-        GenServer.call(@name, {:joinRoom, {roomId, playerId, playerName}})
-        {:ok, nil}
+        if :ets.member(:rooms, roomId) do
+          GenServer.call(@name, {:joinRoom, {roomId, playerId, playerName}})
+          {:ok, nil}
+        else
+          {:error, %{reason: "invalid room id"}}
+        end
       end
     else
       if :ets.member(:rooms, roomId) do
