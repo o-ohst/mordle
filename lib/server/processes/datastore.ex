@@ -154,12 +154,21 @@ defmodule Server.Datastore do
     {:ok, %{roomId: roomId}}
   end
 
+  @spec joinRoom(any, any, any) :: {:error, %{reason: <<_::120>>}} | {:ok, nil}
   def joinRoom(roomId, playerId, playerName) do
-    if :ets.member(:rooms, roomId) do
-      GenServer.call(@name, {:joinRoom, {roomId, playerId, playerName}})
-      {:ok, nil}
+    if :ets.member(:players, playerId) do
+      if :ets.lookup_element(:players, playerId, 2) === roomId do
+        {:error, %{reason: "already in room"}}
+      else
+        {:error, %{reason: "already in game"}}
+      end
     else
-      {:error, %{reason: "invalid room id"}}
+      if :ets.member(:rooms, roomId) do
+        GenServer.call(@name, {:joinRoom, {roomId, playerId, playerName}})
+        {:ok, nil}
+      else
+        {:error, %{reason: "invalid room id"}}
+      end
     end
   end
 

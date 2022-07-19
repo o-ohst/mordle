@@ -46,6 +46,7 @@ defmodule ServerWeb.Router do
     post "/guess", ApiController, :guess
     post "/end-game", ApiController, :endGame
 
+    get "/logged-in", AuthController, :loggedIn
     post "/signup", AuthController, :signup
     post "/login", AuthController, :login
   end

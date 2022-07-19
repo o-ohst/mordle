@@ -2,6 +2,11 @@ defmodule ServerWeb.AuthController do
   use ServerWeb, :controller
   import Ecto.Query, only: [from: 2]
 
+  def loggedIn(conn, _params) do
+    logged = Server.Guardian.Plug.authenticated?(conn)
+    conn |> json(%{loggedIn: logged})
+  end
+
   def signup(conn, %{"username" => username, "password" => password, "name" => name}) do
     if Server.Guardian.Plug.authenticated?(conn) do
       conn |> send_resp(400, "Already logged in")
@@ -47,4 +52,5 @@ defmodule ServerWeb.AuthController do
       |> Server.Guardian.Plug.sign_out()
       |> send_resp(200, "Success")
   end
+
 end

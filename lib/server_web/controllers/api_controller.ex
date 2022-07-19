@@ -6,7 +6,16 @@ defmodule ServerWeb.ApiController do
   ##multiplayer
 
   def register(conn, _params) do
-    conn |> json(%{playerId: Helpers.randomPlayerId()})
+    case get_session(conn, "playerId") do
+      nil ->
+        playerId = Helpers.randomPlayerId();
+        conn
+        |> put_session("playerId", playerId)
+        |> json(%{playerId: playerId})
+      playerId ->
+        conn |> json(%{playerId: playerId})
+    end
+
   end
 
   def createRoom(conn, _params) do
