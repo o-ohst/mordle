@@ -15,13 +15,21 @@ defmodule ServerWeb.ApiController do
       playerId ->
         conn |> json(%{playerId: playerId})
     end
-
   end
 
   def createRoom(conn, _params) do
-    {:ok, %{roomId: roomId}} = Server.Datastore.createRoom()
-    conn
-      |> json(%{roomId: roomId})
+     case get_session(conn, "playerId") do
+      nil ->
+        {:ok, %{roomId: roomId}} = Server.Datastore.createRoom()
+        conn |> json(%{roomId: roomId})
+      playerId ->
+        if :ets.member(:players, playerId) do
+          conn |> send_resp(400, "already in game")
+        else
+          {:ok, %{roomId: roomId}} = Server.Datastore.createRoom()
+          conn |> json(%{roomId: roomId})
+        end
+    end
   end
 
   ##singleplayer

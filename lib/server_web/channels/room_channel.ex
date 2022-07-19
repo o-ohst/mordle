@@ -3,20 +3,19 @@ defmodule ServerWeb.RoomChannel do
 
   @impl true
   def join("room:" <> roomId, payload, socket) do
-    {status, msg} = Server.Datastore.joinRoom(roomId, socket.assigns.playerId, payload["playerName"])
-    if status == :ok do
-      send(self(), :joined)
-      {:ok, assign(socket, :playerName, payload["playerName"])}
-    else
-      if msg === nil do
-        {:error, %{reason: "unknown"}}
-      else
+    case Server.Datastore.joinRoom(roomId, socket.assigns.playerId, payload["playerName"]) do
+      {:ok, nil} ->
+        {:ok, roomState} = Server.Datastore.getRoomState(roomId, socket.assigns.playerId)
+        send(self(), :joined)
+        {:ok, roomState, assign(socket, :playerName, payload["playerName"])}
+      {:error, msg} ->
         if msg[:reason] == "already in room" do
-          {:ok, socket}
+          {:ok, roomState} = Server.Datastore.getRoomState(roomId, socket.assigns.playerId)
+          {:ok, name} = Server.Datastore.getPlayerName(socket.assigns.playerId)
+          {:ok, roomState, assign(socket, :playerName, name)}
         else
           {:error, %{reason: msg[:reason]}}
         end
-      end
     end
   end
 

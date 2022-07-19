@@ -7,7 +7,9 @@ defmodule ServerWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_server_key",
-    signing_salt: "gN6DLN7G"
+    signing_salt: "gN6DLN7G",
+    same_site: "None",
+    secure: true
   ]
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
@@ -51,6 +53,6 @@ defmodule ServerWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug CORSPlug, origin: ["*"]
+  plug CORSPlug, origin: ["http://localhost:3000", "https://mordle-*.vercel.app"]
   plug ServerWeb.Router
 end

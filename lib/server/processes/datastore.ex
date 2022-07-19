@@ -1,16 +1,5 @@
 defmodule Server.Datastore do
   use GenServer
-
-  # rooms (set)
-  #   {id, players:{}, started, word, round}
-  # players (set)
-  #   {id, roomId, state, row, score}
-  # guesses (bag)
-  #   {guess, playerId, roomId, row, result}
-  ## presence (set)
-  ##   {roomId, counter}
-
-
   @name __MODULE__
 
   @spec start_link(any) :: :ignore | {:error, any} | {:ok, pid}
@@ -20,6 +9,7 @@ defmodule Server.Datastore do
     :ets.new(:rooms, [:set, :named_table, :public])
     :ets.new(:players, [:set, :named_table])
     :ets.new(:guesses, [:bag, :named_table])
+    :ets.new(:endTimes, [:set, :named_table, :public])
     {:ok, words} = File.read(Path.join([Application.app_dir(:server), "priv/data/words.txt"]))
     word_list = words |> String.split("\n", trim: true) |> Enum.map(fn x -> {x} end)
     :ets.new(:allowed, [:set, :named_table])
@@ -34,8 +24,27 @@ defmodule Server.Datastore do
     {:reply, res, state}
   end
 
+  def handle_call({:getRoomState, {roomId, playerId}}, _ref, state) do
+
+    [{id, players, started, _word, round}] = :ets.lookup(:rooms, roomId)
+    roomData = %{roomId: id, players: players
+      |> Enum.map(fn {a, b} -> %{playerId: a, playerName: b, state: :ets.lookup_element(:players, a, 3)} end),
+    started: started, round: round}
+
+    players = :ets.match(:players, {:"$1", roomId, :"$2", :"$3", :"$4"})
+      |> Enum.map(fn [a, b, c, d] -> %{playerId: a, state: b, row: c, score: d} end)
+
+    endTime = :ets.lookup_element(:endTimes, roomId, 2)
+
+    guesses = :ets.match(:guesses, {:"$1", playerId, roomId, :"$2", :"$3"})
+      |> Enum.map(fn [a, b, c] -> %{guess: a, row: b, result: c} end)
+
+    {:reply, %{room: roomData, players: players, endTime: endTime, guesses: guesses}, state}
+  end
+
   def handle_call({:createRoom, data}, _ref, state) do
     :ets.insert(:rooms, data)
+    :ets.insert(:endTimes, {elem(data, 0), 0 })
     IO.inspect(data)
     {:reply, :ok, state}
   end
@@ -50,6 +59,7 @@ defmodule Server.Datastore do
   def handle_call({:deleteRoom, data}, _ref, state) do #remove all data from room players
     {roomId} = data
     :ets.delete(:rooms, roomId)
+    :ets.delete(:endTimes, roomId)
     # :ets.delete(:presence, roomId)
     players = :ets.match(:rooms, {roomId, :"$1", :_, :_, :_})
     for p <- players |> Enum.flat_map(&Function.identity/1) do
@@ -63,6 +73,13 @@ defmodule Server.Datastore do
     [{id, roomId, pState, row, score}] = :ets.lookup(:players, playerId)
     res = %{playerId: id, roomId: roomId, state: pState, row: row, score: score}
     {:reply, res, state}
+  end
+
+  def handle_call({:getPlayerName, playerId}, _ref, state) do
+    name = :ets.lookup_element(:rooms, :ets.lookup_element(:players, playerId, 2), 2)
+      |> Enum.find(fn e -> elem(e, 0) === playerId end)
+      |> elem(1)
+    {:reply, %{playerName: name}, state}
   end
 
   def handle_call({:guess, data}, _ref, state) do
@@ -119,6 +136,7 @@ defmodule Server.Datastore do
       :ets.update_element(:players, x, {3, "ready"})
       :ets.update_element(:players, x, {4, 0})
     end)
+    :ets.update_element(:endTimes, roomId, {2, DateTime.add(DateTime.utc_now(), 180)})
     IO.inspect(:ets.lookup(:rooms, roomId))
     {:reply, :ok, state}
   end
@@ -148,6 +166,11 @@ defmodule Server.Datastore do
     {:ok, res}
   end
 
+  def getRoomState(roomId, playerId) do
+    res = GenServer.call(@name, {:getRoomState, {roomId, playerId}})
+    {:ok, res}
+  end
+
   def createRoom() do
     roomData = {roomId, [], _started, _word, _round} = {Helpers.randomRoomId(), [], false, "", 0}
     GenServer.call(@name, {:createRoom, roomData})
@@ -160,7 +183,8 @@ defmodule Server.Datastore do
       if :ets.lookup_element(:players, playerId, 2) === roomId do
         {:error, %{reason: "already in room"}}
       else
-        {:error, %{reason: "already in game"}}
+        GenServer.call(@name, {:joinRoom, {roomId, playerId, playerName}})
+        {:ok, nil}
       end
     else
       if :ets.member(:rooms, roomId) do
@@ -174,6 +198,11 @@ defmodule Server.Datastore do
 
   def getPlayer(playerId) do
     res = GenServer.call(@name, {:getPlayer, playerId})
+    {:ok, res}
+  end
+
+  def getPlayerName(playerId) do
+    res = GenServer.call(@name, {:getPlayerName, playerId})
     {:ok, res}
   end
 
