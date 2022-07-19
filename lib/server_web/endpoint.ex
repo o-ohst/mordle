@@ -53,6 +53,6 @@ defmodule ServerWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug CORSPlug, origin: ["http://localhost:3000", "https://mordle-*.vercel.app"]
+  plug CORSPlug, origin: ["http://localhost:3000", "https://mordle-cow.vercel.app"]
   plug ServerWeb.Router
 end
