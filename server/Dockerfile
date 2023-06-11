@@ -1,12 +1,14 @@
 FROM elixir:1.13.4
 
+ENV MIX_ENV prod
 WORKDIR /app
 COPY . ./
 
 RUN mix local.hex --force
 RUN mix local.rebar --force
-RUN mix deps.get
-RUN mix do compile
+RUN mix deps.get --only prod
+
+RUN mix compile
 
 EXPOSE 4000
 
