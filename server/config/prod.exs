@@ -23,7 +23,7 @@ config :logger, level: :info
 config :server, ServerWeb.Endpoint,
   # url: [host: "mordle.gigalixir.app", port: 443, scheme: "https"]/////////,
   http: [port: {:system, "PORT"}],
-  check_origin: ["http://localhost:3000", "https://mordle-cow.vercel.app"],
+  check_origin: [System.get_env("CLIENT_URL") || "http://localhost:3000"],
   # https: [
   #   port: 443,
   #   cipher_suite: :strong,
