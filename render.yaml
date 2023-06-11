@@ -1,10 +1,11 @@
 services:
   - type: web
+    plan: free
     name: client
     runtime: docker
     dockerfilePath: ./client/Dockerfile
     envVars:
-      - key: port
+      - port:
         value: 3000
       - key: REACT_APP_API_URL
         value: http://localhost:4000/api
@@ -12,6 +13,7 @@ services:
         value: ws://localhost:4000/socket
 
   - type: web
+    plan: free
     name: server
     runtime: docker
     dockerfilePath: ./server/Dockerfile
@@ -26,5 +28,3 @@ services:
         generateValue: true
       - key: PHX_HOST
         value: mordle.onrender.com
-      
-      
