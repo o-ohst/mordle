@@ -5,6 +5,7 @@ services:
     runtime: docker
     region: singapore
     dockerfilePath: ./client/Dockerfile
+    dockerContext: ./client
     envVars:
       - key: PORT
         value: 3000
@@ -19,6 +20,7 @@ services:
     runtime: docker
     region: singapore
     dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
     envVars:
       - key: PORT
         value: 4000
