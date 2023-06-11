@@ -1,10 +1,10 @@
 FROM node:lts-slim
 WORKDIR /app
-COPY ["package.json", "package-lock.json", "./"]
 
-RUN npm install
+COPY package*.json ./
+RUN npm ci --omit=dev
 
-COPY . ./
+COPY . .
 
 RUN npm run build
 RUN npm prune --production
