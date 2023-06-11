@@ -21,9 +21,8 @@ config :logger, level: :info
 # to the previous section and set your `:url` port to 443:
 #
 config :server, ServerWeb.Endpoint,
-  # url: [host: "mordle.gigalixir.app", port: 443, scheme: "https"]/////////,
   http: [port: {:system, "PORT"}],
-  check_origin: [System.get_env("CLIENT_URL") || "http://localhost:3000"],
+  check_origin: ["//#{System.get_env("CLIENT_HOSTNAME")}" || "//localhost:3000"],
   # https: [
   #   port: 443,
   #   cipher_suite: :strong,

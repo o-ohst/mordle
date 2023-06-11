@@ -26,11 +26,13 @@ function SingleplayerPage() {
 
   const [gameEnd, setGameEnd] = useState(false);
   const [topMessage, setTopMsg] = useState("");
-  const url = process.env.REACT_APP_API_URL;
+  const url = "https://" + process.env.REACT_APP_SERVER_HOSTNAME + "/api"
+
 
   const { minutes, seconds, start, pause, reset } = useStopwatch({});
 
   useEffect(() => {
+    
     if (loggedIn && !playedToday) {
       axios.get(url + "/played-today").then((res) => {
         setPlayedToday(res.played);
