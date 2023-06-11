@@ -17,7 +17,7 @@ defmodule ServerWeb.Endpoint do
   socket "/socket", ServerWeb.UserSocket,
     websocket: [timeout: 45_000],
     longpoll: false,
-    check_origin: ["http://localhost:3000", "https://mordle-cow.vercel.app"]
+    check_origin: ["//localhost:3000", "//#{System.get_env("CLIENT_HOSTNAME")}"]
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -53,6 +53,6 @@ defmodule ServerWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug CORSPlug, origin: ["http://localhost:3000", "https://mordle-cow.vercel.app"]
+  plug CORSPlug, origin: ["http://localhost:3000", "https://#{System.get_env("CLIENT_HOSTNAME")}"]
   plug ServerWeb.Router
 end
