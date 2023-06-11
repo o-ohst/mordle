@@ -2,12 +2,11 @@ FROM node:lts-slim
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 COPY . .
 
 RUN npm run build
-RUN npm prune --production
 RUN npm install -g serve
 
 EXPOSE 3000
