@@ -75,7 +75,7 @@ function MultiplayerPage() {
   }, [playerId]);
 
   function connectToSocket(pid) {
-    const ss = new Socket("wss://" + process.env.REACT_APP_SERVER_HOSTNAME + "/", {
+    const ss = new Socket("wss://" + process.env.REACT_APP_SERVER_HOSTNAME, {
       params: { playerId: pid },
     });
     ss.connect();
