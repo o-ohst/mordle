@@ -59,7 +59,7 @@ function MultiplayerPage() {
         setPlayerId(localStorage.getItem("playerId"));
         connectToSocket(localStorage.getItem("playerId"));
       }
-      axios.get(process.env.REACT_APP_API_URL + "/register", { withCredentials: true }).then((res) => {
+      axios.get("https://" + process.env.REACT_APP_SERVER_HOSTNAME + "/api"+ "/register", { withCredentials: true }).then((res) => {
         setPlayerId(res.data.playerId);
         localStorage.setItem("playerId", res.data.playerId);
       });
@@ -75,7 +75,7 @@ function MultiplayerPage() {
   }, [playerId]);
 
   function connectToSocket(pid) {
-    const ss = new Socket(process.env.REACT_APP_WS_URL, {
+    const ss = new Socket("wss://" + process.env.REACT_APP_SERVER_HOSTNAME + "/", {
       params: { playerId: pid },
     });
     ss.connect();
@@ -99,7 +99,7 @@ function MultiplayerPage() {
       return;
     }
     axios //http
-      .get(process.env.REACT_APP_API_URL + "/create-room", {
+      .get("https://" + process.env.REACT_APP_SERVER_HOSTNAME + "/api" + "/create-room", {
         params: { playerId: playerId },
         withCredentials: true
       })

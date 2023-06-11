@@ -9,10 +9,11 @@ services:
     envVars:
       - key: PORT
         value: 3000
-      - key: REACT_APP_API_URL
-        value: http://localhost:4000/api
-      - key: REACT_APP_WS_URL
-        value: ws://localhost:4000/socket
+      - key: REACT_APP_SERVER_HOSTNAME
+        fromService:
+          type: web
+          name: server
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
 
   - type: web
     plan: free
@@ -30,5 +31,8 @@ services:
         value: true
       - key: SECRET_KEY_BASE
         generateValue: true
-      - key: PHX_HOST
-        value: mordle.onrender.com
+      - key: CLIENT_HOSTNAME
+        fromService:
+          type: web
+          name: mordle
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
