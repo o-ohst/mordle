@@ -7,8 +7,8 @@
 # General application configuration
 import Config
 
-config :server,
-  ecto_repos: [Server.Repo]
+# config :server,
+#   ecto_repos: [Server.Repo]
 
 # Configures the endpoint
 config :server, ServerWeb.Endpoint,
