@@ -208,7 +208,7 @@ function MultiplayerGamePage() {
       let ch;
 
       if (socket === null) {
-        const ss = new Socket("wss://" + process.env.REACT_APP_SERVER_HOSTNAME, {
+        const ss = new Socket("wss://" + process.env.REACT_APP_SERVER_HOSTNAME + "/socket", {
           params: { playerId: localStorage.getItem("playerId") },
         });
         ss.connect();
