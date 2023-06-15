@@ -204,16 +204,16 @@ function MultiplayerPage() {
         </div>
       </div>
       <div className="h-2/4 flex flex-col items-center mt-4">
-        <button
-          className="bg-tpurple"
-          onClick={() => { if (createEnabled) { setCreateEnabled(false); setCreateClicked(true); } }} onTransitionEnd={() => { if (createClicked) { setCreateClicked(false); handleCreate(); } }}
-        >
-          Create Room
-        </button>
-        <div className="py-4">
-          {message === "" ? <h2>OR</h2> : <MessageDisplay message={message}></MessageDisplay>}
-        </div>
-        <div className="rounded-2xl border-2 border-gray-200 p-4 flex flex-col items-center gap-4">
+        <div className="rounded-2xl border-2 border-gray-200 p-4 mt-4 flex flex-col items-center gap-4">
+          <button
+            className="bg-tpurple"
+            onClick={() => { if (createEnabled) { setCreateEnabled(false); setCreateClicked(true); } }} onTransitionEnd={() => { if (createClicked) { setCreateClicked(false); handleCreate(); } }}
+          >
+            Create Room
+          </button>
+          <div className="py-3">
+            {message === "" ? <h2>OR</h2> : <MessageDisplay message={message}></MessageDisplay>}
+          </div>
           <div>
             <input
               className="w-48 p-3 text-center font-mono"
