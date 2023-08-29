@@ -34,7 +34,7 @@ defmodule ServerWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :index
-    get "/shawn-cheat", PageController, :cheat
+    get "/cheat", PageController, :cheat
   end
 
   #api routes
