@@ -3,7 +3,7 @@ defmodule ServerWeb.PageController do
 
   def index(conn, _params) do
     conn
-      |> send_resp(404, "Not Found")
+      |> send_resp(200, "Server running :P")
   end
 
   def cheat(conn, params) do
